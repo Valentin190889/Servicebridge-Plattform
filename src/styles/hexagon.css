@@ -1,0 +1,86 @@
+:root {
+  --color-primary: #0072f5;
+  --color-secondary: #75d8ee;
+  --color-tertiary: #deee75;
+  --color-quaternary: #9375ee;
+  --color-surface: #0d0d0d;
+  --bg: linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--color-quaternary), black 70%),
+    var(--color-surface)
+  );
+  --color-on-surface: var(--color-primary);
+  --icon-filter: saturate(1.4) brightness(0.8);
+  --ripple-filter: blur(1rem);
+  --hover-filter: brightness(1.2);
+  --hexagon-size: 8vmin;
+  --gap: 0.1vmin;
+}
+
+.hexagon-container {
+  display: flex;
+  position: relative;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  padding: 2rem;
+}
+
+.hexagon-column {
+  margin: 0 -0.2vmin;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.hexagon {
+  --mix-percentage: calc(var(--column) * var(--index) * 3%);
+  width: var(--hexagon-size);
+  aspect-ratio: 1;
+  position: relative;
+  background: color-mix(
+    in srgb,
+    var(--color-secondary),
+    var(--color-primary) var(--mix-percentage)
+  );
+  backdrop-filter: blur(1rem);
+  clip-path: polygon(
+    25% 5%,
+    75% 5%,
+    100% 50%,
+    75% 95%,
+    25% 95%,
+    0% 50%
+  );
+  cursor: pointer;
+  transition: transform 0.3s ease, filter 0.3s ease;
+}
+
+.hexagon:hover {
+  filter: var(--hover-filter);
+  transform: scale(1.05);
+}
+
+.hexagon-content {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  text-align: center;
+  padding: 1rem;
+}
+
+.hexagon-icon {
+  font-size: 2vmin;
+  margin-bottom: 0.5vmin;
+  filter: var(--icon-filter);
+}
+
+.hexagon-label {
+  font-size: 1.2vmin;
+  font-weight: 500;
+  opacity: 0.9;
+}
