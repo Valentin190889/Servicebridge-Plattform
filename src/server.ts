@@ -1,33 +1,41 @@
 import express from 'express';
+import cors from 'cors';
+import { AppDataSource } from './config/database';
+import authRoutes from './routes/auth';
+import apiRoutes from './routes/api';
 import dotenv from 'dotenv';
 
-// Load environment variables
 dotenv.config();
 
 const app = express();
 const port = process.env.PORT || 3001;
 
-// Basic middleware
+// Middleware
+app.use(cors());
 app.use(express.json());
 
-// Health check route
-app.get('/api/health', (_req, res) => {
-  res.json({ status: 'ok', message: 'Server is running' });
+// Routes
+app.use('/api/auth', authRoutes);
+app.use('/api', apiRoutes);
+
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.json({ status: 'ok', timestamp: new Date() });
 });
 
-// Test route
-app.post('/api/test', (req, res) => {
-  res.json({ 
-    status: 'ok', 
-    message: 'Test endpoint working', 
-    data: req.body 
-  });
-});
+// Initialize database connection and start server
+const startServer = async () => {
+  try {
+    await AppDataSource.initialize();
+    console.log('Database connection established successfully');
+    
+    app.listen(port, () => {
+      console.log(`Server is running on port ${port}`);
+    });
+  } catch (error) {
+    console.error('Error during initialization:', error);
+    process.exit(1);
+  }
+};
 
-// Start server
-app.listen(port, () => {
-  console.log(`Server is running on port ${port}`);
-  console.log(`Test the server: http://localhost:${port}/api/health`);
-});
-
-export default app; 
+startServer(); 

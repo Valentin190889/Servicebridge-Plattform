@@ -1,0 +1,157 @@
+-- Create Tags table
+CREATE TABLE tags (
+  id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWSEQUENTIALID(),
+  name NVARCHAR(255) NOT NULL UNIQUE,
+  color VARCHAR(255) NULL,
+  createdAt DATETIME2 NOT NULL DEFAULT GETDATE(),
+  updatedAt DATETIME2 NOT NULL DEFAULT GETDATE()
+);
+
+-- Create Teams table
+CREATE TABLE teams (
+  id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWSEQUENTIALID(),
+  name NVARCHAR(255) NOT NULL,
+  description TEXT NULL,
+  ownerId UNIQUEIDENTIFIER NULL,
+  createdAt DATETIME2 NOT NULL DEFAULT GETDATE(),
+  updatedAt DATETIME2 NOT NULL DEFAULT GETDATE(),
+  FOREIGN KEY (ownerId) REFERENCES users(id)
+);
+
+-- Create Permissions table
+CREATE TABLE permissions (
+  id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWSEQUENTIALID(),
+  name NVARCHAR(255) NOT NULL UNIQUE,
+  description TEXT NULL,
+  resource NVARCHAR(255) NOT NULL,
+  action NVARCHAR(255) NOT NULL,
+  createdAt DATETIME2 NOT NULL DEFAULT GETDATE(),
+  updatedAt DATETIME2 NOT NULL DEFAULT GETDATE()
+);
+
+-- Create Roles table
+CREATE TABLE roles (
+  id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWSEQUENTIALID(),
+  name NVARCHAR(255) NOT NULL UNIQUE,
+  description TEXT NULL,
+  createdAt DATETIME2 NOT NULL DEFAULT GETDATE(),
+  updatedAt DATETIME2 NOT NULL DEFAULT GETDATE()
+);
+
+-- Create Comments table
+CREATE TABLE comments (
+  id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWSEQUENTIALID(),
+  content TEXT NOT NULL,
+  targetType VARCHAR(255) NOT NULL CHECK (targetType IN ('project', 'task')),
+  projectId UNIQUEIDENTIFIER NULL,
+  taskId UNIQUEIDENTIFIER NULL,
+  authorId UNIQUEIDENTIFIER NOT NULL,
+  createdAt DATETIME2 NOT NULL DEFAULT GETDATE(),
+  updatedAt DATETIME2 NOT NULL DEFAULT GETDATE(),
+  FOREIGN KEY (authorId) REFERENCES users(id),
+  FOREIGN KEY (projectId) REFERENCES projects(id),
+  FOREIGN KEY (taskId) REFERENCES tasks(id)
+);
+
+-- Create Attachments table
+CREATE TABLE attachments (
+  id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWSEQUENTIALID(),
+  filename NVARCHAR(255) NOT NULL,
+  originalFilename NVARCHAR(255) NOT NULL,
+  mimeType NVARCHAR(255) NOT NULL,
+  size BIGINT NOT NULL,
+  path VARCHAR(255) NULL,
+  targetType VARCHAR(255) NOT NULL CHECK (targetType IN ('project', 'task')),
+  projectId UNIQUEIDENTIFIER NULL,
+  taskId UNIQUEIDENTIFIER NULL,
+  uploaderId UNIQUEIDENTIFIER NOT NULL,
+  createdAt DATETIME2 NOT NULL DEFAULT GETDATE(),
+  updatedAt DATETIME2 NOT NULL DEFAULT GETDATE(),
+  FOREIGN KEY (uploaderId) REFERENCES users(id),
+  FOREIGN KEY (projectId) REFERENCES projects(id),
+  FOREIGN KEY (taskId) REFERENCES tasks(id)
+);
+
+-- Create TimeEntries table
+CREATE TABLE time_entries (
+  id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWSEQUENTIALID(),
+  startTime DATETIME2 NOT NULL,
+  endTime DATETIME2 NULL,
+  duration FLOAT NOT NULL DEFAULT 0,
+  description TEXT NULL,
+  isBillable BIT NOT NULL DEFAULT 0,
+  userId UNIQUEIDENTIFIER NOT NULL,
+  taskId UNIQUEIDENTIFIER NOT NULL,
+  projectId UNIQUEIDENTIFIER NOT NULL,
+  createdAt DATETIME2 NOT NULL DEFAULT GETDATE(),
+  updatedAt DATETIME2 NOT NULL DEFAULT GETDATE(),
+  FOREIGN KEY (userId) REFERENCES users(id),
+  FOREIGN KEY (taskId) REFERENCES tasks(id),
+  FOREIGN KEY (projectId) REFERENCES projects(id)
+);
+
+-- Create Notifications table
+CREATE TABLE notifications (
+  id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWSEQUENTIALID(),
+  type VARCHAR(255) NOT NULL CHECK (type IN ('project_assigned', 'project_updated', 'task_assigned', 'task_updated', 'comment_added', 'deadline_approaching')),
+  message NVARCHAR(255) NOT NULL,
+  isRead BIT NOT NULL DEFAULT 0,
+  projectId UNIQUEIDENTIFIER NULL,
+  taskId UNIQUEIDENTIFIER NULL,
+  userId UNIQUEIDENTIFIER NOT NULL,
+  createdAt DATETIME2 NOT NULL DEFAULT GETDATE(),
+  updatedAt DATETIME2 NOT NULL DEFAULT GETDATE(),
+  FOREIGN KEY (userId) REFERENCES users(id),
+  FOREIGN KEY (projectId) REFERENCES projects(id),
+  FOREIGN KEY (taskId) REFERENCES tasks(id)
+);
+
+-- Create junction tables
+-- Project Tags
+CREATE TABLE project_tags (
+  tagId UNIQUEIDENTIFIER NOT NULL,
+  projectId UNIQUEIDENTIFIER NOT NULL,
+  PRIMARY KEY (tagId, projectId),
+  FOREIGN KEY (tagId) REFERENCES tags(id),
+  FOREIGN KEY (projectId) REFERENCES projects(id)
+);
+
+-- Task Tags
+CREATE TABLE task_tags (
+  tagId UNIQUEIDENTIFIER NOT NULL,
+  taskId UNIQUEIDENTIFIER NOT NULL,
+  PRIMARY KEY (tagId, taskId),
+  FOREIGN KEY (tagId) REFERENCES tags(id),
+  FOREIGN KEY (taskId) REFERENCES tasks(id)
+);
+
+-- Team Members
+CREATE TABLE team_members (
+  teamId UNIQUEIDENTIFIER NOT NULL,
+  userId UNIQUEIDENTIFIER NOT NULL,
+  PRIMARY KEY (teamId, userId),
+  FOREIGN KEY (teamId) REFERENCES teams(id),
+  FOREIGN KEY (userId) REFERENCES users(id)
+);
+
+-- Role Permissions
+CREATE TABLE role_permissions (
+  roleId UNIQUEIDENTIFIER NOT NULL,
+  permissionId UNIQUEIDENTIFIER NOT NULL,
+  PRIMARY KEY (roleId, permissionId),
+  FOREIGN KEY (roleId) REFERENCES roles(id),
+  FOREIGN KEY (permissionId) REFERENCES permissions(id)
+);
+
+-- User Roles
+CREATE TABLE user_roles (
+  userId UNIQUEIDENTIFIER NOT NULL,
+  roleId UNIQUEIDENTIFIER NOT NULL,
+  PRIMARY KEY (userId, roleId),
+  FOREIGN KEY (userId) REFERENCES users(id),
+  FOREIGN KEY (roleId) REFERENCES roles(id)
+);
+
+-- Add teamId to projects table
+ALTER TABLE projects ADD teamId UNIQUEIDENTIFIER NULL;
+ALTER TABLE projects ADD CONSTRAINT FK_projects_teams FOREIGN KEY (teamId) REFERENCES teams(id); 

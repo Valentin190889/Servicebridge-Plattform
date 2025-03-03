@@ -1,50 +1,35 @@
 import { Request, Response, NextFunction } from 'express';
-import { AuthService } from '../services/authService';
-
-const authService = new AuthService();
+import jwt from 'jsonwebtoken';
+import { AppDataSource } from '../config/database';
+import { User } from '../entities/User';
 
 export interface AuthRequest extends Request {
-    user?: {
-        userId: number;
-        email: string;
-    };
+    user?: User;
 }
 
-export const requireAuth = async (
-    req: AuthRequest,
-    res: Response,
-    next: NextFunction
-): Promise<void> => {
+export const authenticateToken = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-        const authHeader = req.headers.authorization;
-        if (!authHeader) {
-            res.status(401).json({ error: 'No token provided' });
-            return;
+        const authHeader = req.headers['authorization'];
+        const token = authHeader && authHeader.split(' ')[1];
+
+        if (!token) {
+            return res.status(401).json({ message: 'No token provided' });
         }
 
-        const parts = authHeader.split(' ');
-        if (parts.length !== 2 || parts[0] !== 'Bearer') {
-            res.status(401).json({ error: 'Invalid authorization header format' });
-            return;
-        }
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key') as { email: string };
+        const userRepository = AppDataSource.getRepository(User);
+        const user = await userRepository.findOne({ where: { email: decoded.email } });
 
-        const token = parts[1];
-        const user = await authService.validateSession(token);
-        
         if (!user) {
-            res.status(401).json({ error: 'Invalid or expired token' });
-            return;
+            return res.status(401).json({ message: 'Invalid token' });
         }
 
-        // Attach user to request object
-        req.user = {
-            userId: user.userId!,
-            email: user.email
-        };
-
+        req.user = user;
         next();
     } catch (error) {
-        console.error('Authentication error:', error);
-        res.status(500).json({ error: 'Internal server error' });
+        return res.status(401).json({ message: 'Invalid token' });
     }
-}; 
+};
+
+// Alias for backward compatibility
+export const requireAuth = authenticateToken; 
