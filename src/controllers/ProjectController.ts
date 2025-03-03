@@ -37,6 +37,12 @@ export class ProjectController {
 
     async getProject(req: AuthRequest, res: Response) {
         try {
+            // If using the validateProjectAccess middleware, the project is already attached to the request
+            if (req.project) {
+                return res.json(req.project);
+            }
+
+            // Fallback to the original implementation if middleware is not used
             const project = await this.projectRepository
                 .createQueryBuilder('project')
                 .leftJoinAndSelect('project.tasks', 'tasks')
@@ -89,15 +95,24 @@ export class ProjectController {
     async updateProject(req: AuthRequest, res: Response) {
         try {
             const { name, description, status, priority, startDate, dueDate, progress } = req.body;
-            const project = await this.projectRepository
-                .createQueryBuilder('project')
-                .leftJoinAndSelect('project.owner', 'owner')
-                .where('project.id = :projectId', { projectId: req.params.id })
-                .andWhere('owner.id = :userId', { userId: req.user?.id })
-                .getOne();
-
+            
+            // If using the validateProjectAccess middleware, the project is already attached to the request
+            let project = req.project;
+            
             if (!project) {
-                return res.status(404).json({ message: 'Project not found' });
+                // Fallback to the original implementation if middleware is not used
+                const foundProject = await this.projectRepository
+                    .createQueryBuilder('project')
+                    .leftJoinAndSelect('project.owner', 'owner')
+                    .where('project.id = :projectId', { projectId: req.params.id })
+                    .andWhere('owner.id = :userId', { userId: req.user?.id })
+                    .getOne();
+
+                if (!foundProject) {
+                    return res.status(404).json({ message: 'Project not found' });
+                }
+                
+                project = foundProject;
             }
 
             if (name) project.name = name;
@@ -118,15 +133,23 @@ export class ProjectController {
 
     async deleteProject(req: AuthRequest, res: Response) {
         try {
-            const project = await this.projectRepository
-                .createQueryBuilder('project')
-                .leftJoinAndSelect('project.owner', 'owner')
-                .where('project.id = :projectId', { projectId: req.params.id })
-                .andWhere('owner.id = :userId', { userId: req.user?.id })
-                .getOne();
-
+            // If using the validateProjectAccess middleware, the project is already attached to the request
+            let project = req.project;
+            
             if (!project) {
-                return res.status(404).json({ message: 'Project not found' });
+                // Fallback to the original implementation if middleware is not used
+                const foundProject = await this.projectRepository
+                    .createQueryBuilder('project')
+                    .leftJoinAndSelect('project.owner', 'owner')
+                    .where('project.id = :projectId', { projectId: req.params.id })
+                    .andWhere('owner.id = :userId', { userId: req.user?.id })
+                    .getOne();
+
+                if (!foundProject) {
+                    return res.status(404).json({ message: 'Project not found' });
+                }
+                
+                project = foundProject;
             }
 
             await this.projectRepository.remove(project);

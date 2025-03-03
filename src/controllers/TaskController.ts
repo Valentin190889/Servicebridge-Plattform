@@ -37,15 +37,23 @@ export class TaskController {
 
     async getProjectTasks(req: AuthRequest, res: Response) {
         try {
-            const project = await this.projectRepository
-                .createQueryBuilder('project')
-                .leftJoinAndSelect('project.owner', 'owner')
-                .where('project.id = :projectId', { projectId: req.params.projectId })
-                .andWhere('owner.id = :userId', { userId: req.user?.id })
-                .getOne();
-
+            // If using the validateProjectAccess middleware, the project is already attached to the request
+            let project = req.project;
+            
             if (!project) {
-                return res.status(404).json({ message: 'Project not found' });
+                // Fallback to the original implementation if middleware is not used
+                const foundProject = await this.projectRepository
+                    .createQueryBuilder('project')
+                    .leftJoinAndSelect('project.owner', 'owner')
+                    .where('project.id = :projectId', { projectId: req.params.projectId })
+                    .andWhere('owner.id = :userId', { userId: req.user?.id })
+                    .getOne();
+
+                if (!foundProject) {
+                    return res.status(404).json({ message: 'Project not found' });
+                }
+                
+                project = foundProject;
             }
 
             const tasks = await this.taskRepository
@@ -111,17 +119,25 @@ export class TaskController {
 
     async updateTask(req: AuthRequest, res: Response) {
         try {
-            const task = await this.taskRepository
-                .createQueryBuilder('task')
-                .leftJoinAndSelect('task.project', 'project')
-                .leftJoinAndSelect('project.owner', 'owner')
-                .leftJoinAndSelect('task.assignee', 'assignee')
-                .where('task.id = :taskId', { taskId: req.params.id })
-                .andWhere('(owner.id = :userId OR assignee.id = :userId)', { userId: req.user?.id })
-                .getOne();
-
+            // If using the validateTaskAccess middleware, the task is already attached to the request
+            let task = req.task;
+            
             if (!task) {
-                return res.status(404).json({ message: 'Task not found or unauthorized' });
+                // Fallback to the original implementation if middleware is not used
+                const foundTask = await this.taskRepository
+                    .createQueryBuilder('task')
+                    .leftJoinAndSelect('task.project', 'project')
+                    .leftJoinAndSelect('project.owner', 'owner')
+                    .leftJoinAndSelect('task.assignee', 'assignee')
+                    .where('task.id = :taskId', { taskId: req.params.id })
+                    .andWhere('(owner.id = :userId OR assignee.id = :userId)', { userId: req.user?.id })
+                    .getOne();
+
+                if (!foundTask) {
+                    return res.status(404).json({ message: 'Task not found or unauthorized' });
+                }
+                
+                task = foundTask;
             }
 
             const { title, description, status, priority, dueDate, progress, estimatedHours, assigneeId } = req.body;
@@ -156,16 +172,24 @@ export class TaskController {
 
     async deleteTask(req: AuthRequest, res: Response) {
         try {
-            const task = await this.taskRepository
-                .createQueryBuilder('task')
-                .leftJoinAndSelect('task.project', 'project')
-                .leftJoinAndSelect('project.owner', 'owner')
-                .where('task.id = :taskId', { taskId: req.params.id })
-                .andWhere('owner.id = :userId', { userId: req.user?.id })
-                .getOne();
-
+            // If using the validateTaskAccess middleware, the task is already attached to the request
+            let task = req.task;
+            
             if (!task) {
-                return res.status(404).json({ message: 'Task not found or unauthorized' });
+                // Fallback to the original implementation if middleware is not used
+                const foundTask = await this.taskRepository
+                    .createQueryBuilder('task')
+                    .leftJoinAndSelect('task.project', 'project')
+                    .leftJoinAndSelect('project.owner', 'owner')
+                    .where('task.id = :taskId', { taskId: req.params.id })
+                    .andWhere('owner.id = :userId', { userId: req.user?.id })
+                    .getOne();
+
+                if (!foundTask) {
+                    return res.status(404).json({ message: 'Task not found or unauthorized' });
+                }
+                
+                task = foundTask;
             }
 
             await this.taskRepository.remove(task);

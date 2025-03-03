@@ -2,9 +2,13 @@ import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { AppDataSource } from '../config/database';
 import { User } from '../entities/User';
+import { Project } from '../entities/Project';
+import { Task } from '../entities/Task';
 
 export interface AuthRequest extends Request {
     user?: User;
+    project?: Project;
+    task?: Task;
 }
 
 export const authenticateToken = async (req: AuthRequest, res: Response, next: NextFunction) => {
