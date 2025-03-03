@@ -7,7 +7,11 @@
     "start": "node dist/server.js",
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
     "build": "tsc",
-    "test": "jest"
+    "test": "jest",
+    "test:isolation": "node scripts/run-all-tests.js",
+    "test:user-isolation": "node scripts/test-user-isolation.js",
+    "test:team-access": "node scripts/test-team-access.js",
+    "test:task-assignment": "node scripts/test-task-assignment.js"
   },
   "dependencies": {
     "@radix-ui/react-tabs": "1.1.3",
